@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrollMaster - Text to Video Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom scrollbar for the text area */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; 
+        }
+        
+        .checkerboard {
+            background-color: #1a1a1a;
+            background-image: 
+                linear-gradient(45deg, #252525 25%, transparent 25%), 
+                linear-gradient(-45deg, #252525 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #252525 75%), 
+                linear-gradient(-45deg, transparent 75%, #252525 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center shadow-lg z-10">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-film text-blue-500 text-2xl"></i>
+            <h1 class="text-xl font-bold tracking-wide">ScrollMaster <span class="text-gray-400 text-sm font-normal">| Text to Video</span></h1>
+        </div>
+        <div class="flex gap-3">
+             <button id="resetBtn" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition font-medium flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> Reset Preview
+            </button>
+            <button id="recordBtn" class="bg-red-600 hover:bg-red-500 px-6 py-2 rounded-lg text-sm transition font-bold flex items-center gap-2 shadow-red-900/50 shadow-lg">
+                <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                <span id="recordText">Start Recording</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden h-[calc(100vh-64px)]">
+        
+        <!-- Settings Panel (Left) -->
+        <aside class="w-full lg:w-96 bg-gray-800 border-r border-gray-700 flex flex-col overflow-y-auto z-10 shadow-xl">
+            <div class="p-5 space-y-6">
+                
+                <!-- Text Input -->
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Content</label>
+                    <textarea id="textInput" class="w-full h-40 bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="Paste your script here...">
+Episode IV
+A NEW HOPE
+
+It is a period of civil war. Rebel spaceships, striking from a hidden base, have won their first victory against the evil Galactic Empire.
+
+During the battle, Rebel spies managed to steal secret plans to the Empire's ultimate weapon, the DEATH STAR, an armored space station with enough power to destroy an entire planet.
+
+Pursued by the Empire's sinister agents, Princess Leia races home aboard her starship, custodian of the stolen plans that can save her people and restore freedom to the galaxy....
+                    </textarea>
+                </div>
+
+                <!-- Canvas Settings -->
+                <div class="space-y-3">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Canvas Size</label>
+                    <div class="grid grid-cols-3 gap-2 mb-2">
+                        <button onclick="setResolution(1920, 1080)" class="bg-gray-700 hover:bg-gray-600 text-xs py-1 rounded">16:9 (YT)</button>
+                        <button onclick="setResolution(1080, 1920)" class="bg-gray-700 hover:bg-gray-600 text-xs py-1 rounded">9:16 (TikTok)</button>
+                        <button onclick="setResolution(1080, 1080)" class="bg-gray-700 hover:bg-gray-600 text-xs py-1 rounded">1:1 (Square)</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-500">Width</label>
+                            <input type="number" id="canvasWidth" value="1920" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-500">Height</label>
+                            <input type="number" id="canvasHeight" value="1080" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Typography -->
+                <div class="space-y-3">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Typography</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] text-gray-500">Size (px)</label>
+                            <input type="number" id="fontSize" value="60" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-gray-500">Color</label>
+                            <div class="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded px-2 py-1">
+                                <input type="color" id="textColor" value="#FFD700" class="w-6 h-6 bg-transparent border-0 cursor-pointer">
+                                <span class="text-xs text-gray-400">Pick</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500">Font Family</label>
+                        <select id="fontFamily" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-sm">
+                            <option value="Arial, sans-serif">Arial (Sans)</option>
+                            <option value="'Courier New', monospace">Courier (Mono)</option>
+                            <option value="Georgia, serif">Georgia (Serif)</option>
+                            <option value="Impact, sans-serif">Impact (Bold)</option>
+                            <option value="Verdana, sans-serif">Verdana</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="centerText" checked class="rounded bg-gray-700 border-gray-600 text-blue-600">
+                        <label for="centerText" class="text-sm text-gray-300">Center Align</label>
+                    </div>
+                </div>
+
+                <!-- Background -->
+                <div class="space-y-3">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Background</label>
+                    
+                    <div class="flex items-center justify-between">
+                        <label class="text-sm text-gray-300">Transparent</label>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="transparentBg" class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+
+                    <div id="bgColorControls">
+                        <label class="text-[10px] text-gray-500">Solid Color</label>
+                        <div class="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded px-2 py-1">
+                            <input type="color" id="bgColor" value="#000000" class="w-full h-8 bg-transparent border-0 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-gray-500">Background Image (Optional)</label>
+                        <input type="file" id="bgImageInput" accept="image/*" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600">
+                        <button id="clearBgImage" class="text-xs text-red-400 hover:text-red-300 mt-1 hidden">Remove Image</button>
+                    </div>
+                </div>
+
+                <!-- Scroll Settings -->
+                <div class="space-y-3 pb-8">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Animation</label>
+                    <div>
+                        <div class="flex justify-between text-[10px] text-gray-500 mb-1">
+                            <span>Speed</span>
+                            <span id="speedValue">2</span>
+                        </div>
+                        <input type="range" id="scrollSpeed" min="0.5" max="10" step="0.5" value="2" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Preview Area (Right) -->
+        <main class="flex-1 bg-gray-950 flex flex-col items-center justify-center p-4 lg:p-10 relative checkerboard overflow-hidden">
+            
+            <div class="text-center mb-4 z-10 pointer-events-none">
+                <span class="bg-black/50 backdrop-blur px-3 py-1 rounded text-xs text-gray-400">
+                    <i class="fa-regular fa-eye mr-1"></i> Preview Mode (Scaled to fit)
+                </span>
+            </div>
+
+            <!-- The Canvas -->
+            <div class="relative shadow-2xl border border-gray-800" style="max-height: 90%; max-width: 90%; aspect-ratio: auto;">
+                <canvas id="videoCanvas" class="bg-black block w-auto h-auto" style="max-height: 80vh; max-width: 100%;"></canvas>
+            </div>
+
+            <!-- Recording Overlay -->
+            <div id="recordingStatus" class="absolute top-5 right-5 bg-red-600 text-white px-4 py-2 rounded-full shadow-lg items-center gap-2 hidden animate-pulse z-20">
+                <div class="w-3 h-3 bg-white rounded-full"></div>
+                <span class="font-bold text-sm">REC</span>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Hidden Download Link -->
+    <a id="downloadLink" style="display:none"></a>
+
+    <script>
+        /**
+         * Core Application Logic
+         */
+        
+        // --- DOM Elements ---
+        const canvas = document.getElementById('videoCanvas');
+        const ctx = canvas.getContext('2d', { alpha: true }); // Enable alpha for transparency
+        const textInput = document.getElementById('textInput');
+        
+        // Inputs
+        const canvasWidthInput = document.getElementById('canvasWidth');
+        const canvasHeightInput = document.getElementById('canvasHeight');
+        const fontSizeInput = document.getElementById('fontSize');
+        const textColorInput = document.getElementById('textColor');
+        const fontFamilyInput = document.getElementById('fontFamily');
+        const centerTextInput = document.getElementById('centerText');
+        const bgColorInput = document.getElementById('bgColor');
+        const transparentBgInput = document.getElementById('transparentBg');
+        const scrollSpeedInput = document.getElementById('scrollSpeed');
+        const bgImageInput = document.getElementById('bgImageInput');
+        const clearBgImageBtn = document.getElementById('clearBgImage');
+        const speedValueDisplay = document.getElementById('speedValue');
+
+        // Buttons
+        const recordBtn = document.getElementById('recordBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const recordingStatus = document.getElementById('recordingStatus');
+        const recordText = document.getElementById('recordText');
+
+        // --- State ---
+        let state = {
+            text: textInput.value,
+            width: 1920,
+            height: 1080,
+            fontSize: 60,
+            textColor: '#FFD700',
+            fontFamily: 'Arial, sans-serif',
+            centered: true,
+            bgColor: '#000000',
+            transparent: false,
+            speed: 2,
+            bgImage: null,
+            scrollY: 0,
+            isRecording: false,
+            animationId: null
+        };
+
+        let mediaRecorder;
+        let recordedChunks = [];
+        
+        // --- Initialization ---
+        
+        function init() {
+            resizeCanvas();
+            resetScroll();
+            startLoop();
+        }
+
+        // --- Canvas Logic ---
+
+        function resizeCanvas() {
+            canvas.width = state.width;
+            canvas.height = state.height;
+        }
+
+        function resetScroll() {
+            // Start text just below the canvas view
+            state.scrollY = state.height; 
+        }
+
+        // Helper: Wrap Text
+        function getLines(ctx, text, maxWidth) {
+            const lines = [];
+            const paragraphs = text.split('\n');
+
+            for (let i = 0; i < paragraphs.length; i++) {
+                const words = paragraphs[i].split(' ');
+                let currentLine = words[0];
+
+                for (let j = 1; j < words.length; j++) {
+                    const word = words[j];
+                    const width = ctx.measureText(currentLine + " " + word).width;
+                    if (width < maxWidth) {
+                        currentLine += " " + word;
+                    } else {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    }
+                }
+                lines.push(currentLine);
+                // Preserve empty lines for paragraphs
+                if (currentLine === undefined) lines.push(""); 
+            }
+            return lines;
+        }
+
+        // Main Draw Loop
+        function draw() {
+            // 1. Clear Canvas
+            ctx.clearRect(0, 0, state.width, state.height);
+
+            // 2. Draw Background
+            if (!state.transparent) {
+                if (state.bgImage) {
+                    // Draw Image Cover
+                    drawImageProp(ctx, state.bgImage, 0, 0, state.width, state.height);
+                    // Add slight overlay if needed to make text readable (optional, skipping for purity)
+                } else {
+                    ctx.fillStyle = state.bgColor;
+                    ctx.fillRect(0, 0, state.width, state.height);
+                }
+            }
+
+            // 3. Configure Text
+            ctx.font = `bold ${state.fontSize}px ${state.fontFamily}`;
+            ctx.fillStyle = state.textColor;
+            ctx.textBaseline = 'top';
+            ctx.textAlign = state.centered ? 'center' : 'left';
+
+            const lineHeight = state.fontSize * 1.5;
+            const padding = state.width * 0.1; // 10% padding
+            const textMaxWidth = state.width - (padding * 2);
+            const xPos = state.centered ? state.width / 2 : padding;
+
+            // 4. Calculate Lines
+            const lines = getLines(ctx, state.text, textMaxWidth);
+
+            // 5. Draw Text Lines
+            let yPos = state.scrollY;
+            
+            lines.forEach(line => {
+                // Optimization: Only draw if on screen
+                if (yPos + lineHeight > 0 && yPos < state.height) {
+                    // Simple shadow for better readability
+                    ctx.shadowColor = "rgba(0,0,0,0.5)";
+                    ctx.shadowBlur = 4;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+                    
+                    ctx.fillText(line, xPos, yPos);
+                    
+                    // Reset shadow
+                    ctx.shadowColor = "transparent";
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                }
+                yPos += lineHeight;
+            });
+
+            // 6. Update Scroll Position
+            // If recording or previewing (we always animate for preview)
+            state.scrollY -= state.speed;
+
+            // Loop logic: If text has gone completely off top, loop it for preview? 
+            // Or just let it run out. For recording, we just let it run.
+            // Let's loop it for preview purposes if not recording
+            const totalTextHeight = lines.length * lineHeight;
+            if (!state.isRecording && state.scrollY < -totalTextHeight) {
+                state.scrollY = state.height; // Loop back to bottom
+            }
+
+            state.animationId = requestAnimationFrame(draw);
+        }
+
+        // Helper to fit image cover style
+        function drawImageProp(ctx, img, x, y, w, h, offsetX, offsetY) {
+            if (arguments.length === 2) {
+                x = y = 0;
+                w = ctx.canvas.width;
+                h = ctx.canvas.height;
+            }
+
+            offsetX = typeof offsetX === "number" ? offsetX : 0.5;
+            offsetY = typeof offsetY === "number" ? offsetY : 0.5;
+
+            if (offsetX < 0) offsetX = 0;
+            if (offsetY < 0) offsetY = 0;
+            if (offsetX > 1) offsetX = 1;
+            if (offsetY > 1) offsetY = 1;
+
+            var iw = img.width,
+                ih = img.height,
+                r = Math.min(w / iw, h / ih),
+                nw = iw * r,   // new prop. width
+                nh = ih * r,   // new prop. height
+                cx, cy, cw, ch, ar = 1;
+
+            // decide which gap to fill    
+            if (nw < w) ar = w / nw;                             
+            if (Math.abs(ar - 1) < 1e-14 && nh < h) ar = h / nh;  // updated
+            nw *= ar;
+            nh *= ar;
+
+            // calc source rectangle
+            cw = iw / (nw / w);
+            ch = ih / (nh / h);
+
+            cx = (iw - cw) * offsetX;
+            cy = (ih - ch) * offsetY;
+
+            // make sure source rectangle is valid
+            if (cx < 0) cx = 0;
+            if (cy < 0) cy = 0;
+            if (cw > iw) cw = iw;
+            if (ch > ih) ch = ih;
+
+            ctx.drawImage(img, cx, cy, cw, ch,  x, y, w, h);
+        }
+
+        function startLoop() {
+            if (state.animationId) cancelAnimationFrame(state.animationId);
+            draw();
+        }
+
+        // --- Events & Updates ---
+
+        function updateStateFromInputs() {
+            state.text = textInput.value;
+            state.width = parseInt(canvasWidthInput.value) || 1920;
+            state.height = parseInt(canvasHeightInput.value) || 1080;
+            state.fontSize = parseInt(fontSizeInput.value) || 60;
+            state.textColor = textColorInput.value;
+            state.fontFamily = fontFamilyInput.value;
+            state.centered = centerTextInput.checked;
+            state.bgColor = bgColorInput.value;
+            state.transparent = transparentBgInput.checked;
+            state.speed = parseFloat(scrollSpeedInput.value);
+
+            // Handle UI logic for background inputs
+            document.getElementById('bgColorControls').style.opacity = state.transparent ? '0.3' : '1';
+            document.getElementById('bgColorControls').style.pointerEvents = state.transparent ? 'none' : 'auto';
+            
+            speedValueDisplay.textContent = state.speed;
+
+            // If dimensions changed, resize
+            if (canvas.width !== state.width || canvas.height !== state.height) {
+                resizeCanvas();
+            }
+        }
+
+        // Event Listeners for Live Updates
+        [textInput, canvasWidthInput, canvasHeightInput, fontSizeInput, 
+         textColorInput, fontFamilyInput, centerTextInput, bgColorInput, 
+         transparentBgInput, scrollSpeedInput].forEach(el => {
+            el.addEventListener('input', updateStateFromInputs);
+            el.addEventListener('change', updateStateFromInputs);
+        });
+
+        // Image Upload
+        bgImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        state.bgImage = img;
+                        clearBgImageBtn.classList.remove('hidden');
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        clearBgImageBtn.addEventListener('click', () => {
+            state.bgImage = null;
+            bgImageInput.value = "";
+            clearBgImageBtn.classList.add('hidden');
+        });
+
+        // Resolution Helpers
+        window.setResolution = (w, h) => {
+            canvasWidthInput.value = w;
+            canvasHeightInput.value = h;
+            updateStateFromInputs();
+            resetScroll();
+        }
+
+        // Reset Logic
+        resetBtn.addEventListener('click', () => {
+            resetScroll();
+        });
+
+        // --- Recording Logic ---
+
+        recordBtn.addEventListener('click', () => {
+            if (state.isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+
+        function startRecording() {
+            // 1. Reset State
+            resetScroll();
+            state.isRecording = true;
+            recordedChunks = [];
+
+            // 2. UI Updates
+            recordText.textContent = "Stop Recording";
+            recordBtn.classList.replace('bg-red-600', 'bg-gray-600');
+            recordBtn.classList.replace('hover:bg-red-500', 'hover:bg-gray-500');
+            recordingStatus.classList.remove('hidden');
+
+            // 3. Setup Stream
+            // 60 FPS capture
+            const stream = canvas.captureStream(60); 
+            
+            // Prefer VP9 for webm transparency support, fallback to standard webm
+            let options = { mimeType: 'video/webm;codecs=vp9' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'video/webm' };
+            }
+
+            try {
+                mediaRecorder = new MediaRecorder(stream, options);
+            } catch (e) {
+                alert("MediaRecorder not supported in this browser. Please use Chrome/Firefox.");
+                state.isRecording = false;
+                return;
+            }
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = exportVideo;
+
+            // 4. Start
+            mediaRecorder.start();
+        }
+
+        function stopRecording() {
+            state.isRecording = false;
+            mediaRecorder.stop();
+
+            // UI Updates
+            recordText.textContent = "Start Recording";
+            recordBtn.classList.replace('bg-gray-600', 'bg-red-600');
+            recordBtn.classList.replace('hover:bg-gray-500', 'hover:bg-red-500');
+            recordingStatus.classList.add('hidden');
+        }
+
+        function exportVideo() {
+            const blob = new Blob(recordedChunks, {
+                type: 'video/webm'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.getElementById('downloadLink');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            
+            a.href = url;
+            a.download = `scroll-video-${timestamp}.webm`;
+            a.click();
+            
+            window.URL.revokeObjectURL(url);
+        }
+
+        // --- Start ---
+        updateStateFromInputs();
+        init();
+
+    </script>
+</body>
+</html>
